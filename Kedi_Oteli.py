@@ -1,51 +1,53 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[13]:
-
-
-# --- Ayarlar / bağlantılar ---
 import psycopg2
+import os
+from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
 import gspread
 from dateutil import parser
 import traceback
 
+load_dotenv("/Users/aslisah/Desktop/Kedi-Oteli/.env")
+
+print("CWD:", os.getcwd())
+print("GS_SERVICE_JSON:", os.getenv("GS_SERVICE_JSON"))
+print("SERVICE_JSON_PATH:", os.getenv("SERVICE_JSON_PATH"))
 
 PG = dict(
-    host="aws-1-ap-southeast-2.pooler.supabase.com",
-    port=5432,
-    dbname="postgres",
-    user="postgres.dyyoxphwtisivzivzzvb",
-    password="HekaOzgur06",
+    host=os.getenv("DB_HOST"),
+    port= os.getenv("DB_PORT"),
+    dbname=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
     sslmode="require"
-    
 )
 
 conn = psycopg2.connect(**PG)
 conn.autocommit = False
-print("DB bağlandı")
+print("DB connected.")
 
-try:
-    test_conn = psycopg2.connect(**PG)
-    print("✅ Supabase bağlantısı başarılı!")
-    test_conn.close()
-except Exception as e:
-    print("❌ Bağlantı hatası:", e)
+#Where am i connected
+with conn.cursor() as cur:
+    cur.execute("select current_database(), current_schema(), current_user;")
+    print("Connected to:", cur.fetchone())
 
 
-SERVICE_JSON    = "kedioteli-1ad8252b41ac.json"
-SPREADSHEET_KEY = "1Kt0-4or7zy_8VviyP_nmdVmnBVpxdxADy-ihUZmK2J0"
-WORKSHEET_NAME  = "Form Yanıtları 1"
+
+SERVICE_JSON = os.getenv("SERVICE_JSON_PATH")
+if not SERVICE_JSON:
+    raise ValueError("SERVICE_JSON_PATH is missing in environment!")
+SPREADSHEET_KEY = os.getenv("SPREADSHEET_KEY")
+WORKSHEET_NAME = os.getenv("WORKSHEET_NAME")
+
 
 scope = ["https://www.googleapis.com/auth/spreadsheets",
          "https://www.googleapis.com/auth/drive"]
+
 creds = Credentials.from_service_account_file(SERVICE_JSON, scopes=scope)
 gc = gspread.authorize(creds)
 ws = gc.open_by_key(SPREADSHEET_KEY).worksheet(WORKSHEET_NAME)
-print("Google Sheets bağlantısı kuruldu")
+print("Google Sheets connection succesful")
 
-# --- Başlık eşlemesi (Sheet sütun adları birebir olsun) ---
+
 COL = {
     "owner_name":  "Evcil Hayvan Sahibi Ad-Soyad",
     "owner_phone": "Evcil Hayvan Sahibi Cep Numara",
@@ -74,7 +76,6 @@ COL = {
 }
 
 
-# --- yardımcılar ---
 def G(r, key, default=None):
     return r.get(COL[key], default)
 
@@ -82,7 +83,7 @@ def d(v):
     if v in (None, "", "None"): return None
     try:
         return parser.parse(str(v), dayfirst=True).date()
-    except Exception:
+    except:
         return None
 
 def num(x):
@@ -98,7 +99,7 @@ def norm_sex(s):
     if s.startswith("d"): return "female"
     return "unknown"
 
-# --- Sheet kolonları (status/error yoksa ekle) ---
+
 headers = ws.row_values(1)
 if "import_status" not in headers:
     ws.update_cell(1, len(headers)+1, "import_status")
@@ -109,9 +110,9 @@ if "import_error" not in headers:
 
 col_status = headers.index("import_status") + 1
 col_error  = headers.index("import_error")  + 1
-print("status col:", col_status, "| error col:", col_error)
 
-# --- cats.owner_id var mı? otomatik algıla ---
+
+
 with conn.cursor() as cur:
     cur.execute("""
         SELECT 1
@@ -120,29 +121,28 @@ with conn.cursor() as cur:
         """)
     CATS_HAS_OWNER = cur.fetchone() is not None
 
-# --- Opsiyonel: gerekli indexler (idempotent) ---
+
 with conn.cursor() as cur:
     cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS ux_owners_name_phone
                    ON public.owners(owner_name, owner_phone);""")
-    # Kedide tekrarın önüne geç (owner_id varsa bunu kullan)
+    # Kedide tekrar olmasın
     if CATS_HAS_OWNER:
         cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS ux_cats_owner_name
                        ON public.cats(owner_id, cat_name);""")
 conn.commit()
 
-# --- Satırları işle ---
+
 rows = ws.get_all_records(value_render_option='FORMATTED_VALUE')
 ok = err = 0
 
 
 for i, r in enumerate(rows, start=2):
-    st = str(r.get("import_status", "")).strip()
-    if st == "Done":   # sadece Done olanları atla
+    if r.get("import_status") == "Done":
         continue
 
     try:
         with conn.cursor() as cur:
-            # --- OWNERS (upsert) ---
+            # OWNERS 
             cur.execute("""
                 INSERT INTO public.owners(owner_name, owner_phone, owner_addr)
                 VALUES (%s, %s, %s)
@@ -150,15 +150,11 @@ for i, r in enumerate(rows, start=2):
                     owner_addr = EXCLUDED.owner_addr
                 RETURNING owner_id;
             """, (G(r,"owner_name"), str(G(r,"owner_phone","")), G(r,"owner_addr")))
-            if cur.rowcount:
-                owner_id = cur.fetchone()[0]
-            else:
-                cur.execute("""SELECT owner_id FROM public.owners
-                               WHERE owner_name=%s AND owner_phone=%s""",
-                            (G(r,"owner_name"), str(G(r,"owner_phone",""))))
-                owner_id = cur.fetchone()[0]
+            
+            owner_id = cur.fetchone()[0]
+           
 
-            # --- CATS (var mı bak; yoksa ekle) ---
+            # CATS
             if CATS_HAS_OWNER:
                 cur.execute("""SELECT cat_id FROM public.cats
                                WHERE owner_id=%s AND cat_name=%s""",
@@ -167,11 +163,11 @@ for i, r in enumerate(rows, start=2):
                 cur.execute("""SELECT cat_id FROM public.cats
                                WHERE cat_name=%s""",
                             (G(r,"cat_name"),))
-            row = cur.fetchone()
+            row2 = cur.fetchone()
 
-            if row:
-                cat_id = row[0]
-                # İstersen güncelle:
+            if row2:
+                cat_id = row2[0]
+                
                 cur.execute("""
                     UPDATE public.cats
                     SET cat_age=%s, cat_sex=%s, cat_breed=%s,
@@ -207,7 +203,7 @@ for i, r in enumerate(rows, start=2):
                           G(r,"cat_allergy"), str(G(r,"chip","")), G(r,"neuter")))
                 cat_id = cur.fetchone()[0]
 
-            # --- BOOKINGS (mevcut kolonlara göre) ---
+            # BOOKINGS 
             cur.execute("""
                 INSERT INTO public.bookings(
                     cat_id, check_in, check_out,
@@ -222,16 +218,16 @@ for i, r in enumerate(rows, start=2):
                  ))
             booking_id = cur.fetchone()[0]
 
-            # --- VACCINATIONS (sadece veri varsa ekle) ---
+            # VACCINATIONS 
             if G(r,"in_ex_date") or G(r,"karma_date") or G(r,"vacc_info"):
                 cur.execute("""
                     INSERT INTO public.vaccinations(cat_id, in_ex_date, karma_date, vacc_info)
                     VALUES (%s,%s,%s,%s)
                 """, (cat_id, d(G(r,"in_ex_date")), d(G(r,"karma_date")), G(r,"vacc_info")))
 
-            # --- SERVICES (Pet Taksi vs.) ---
+            # SERVICES 
             taxi_val = G(r, "taxi")
-            if taxi_val:
+            if taxi_val not in (None, ""):
                 cur.execute("""
                     INSERT INTO public.services (taxi, booking_id)
                     VALUES (%s, %s)
@@ -244,48 +240,15 @@ for i, r in enumerate(rows, start=2):
         ws.update_cell(i, col_error, "")
         ok += 1
 
-    #"except Exception as e:
-        #"conn.rollback()
-        #"print(f""[ROW {i}] ERROR: {e}"")
-        #"ws.update_cell(i, col_status, ""Error"")
-        #"ws.update_cell(i, col_error, str(e))
-        #"err += 1"
 
        
 
     except Exception as e:
         conn.rollback()
-        tb = traceback.format_exc()
         ws.update_cell(i, col_status, "Error")
-        ws.update_cell(i, col_error,  f"{e}\n{tb}")  # <- stack trace'i de yaz
+        ws.update_cell(i, col_error,  traceback.format_exc())  
         err += 1
 
 
-print(f"Tamamlandı ➜ Başarılı: {ok}, Hatalı: {err}")
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+print(f"Success: {ok}, Error: {err}")
 
