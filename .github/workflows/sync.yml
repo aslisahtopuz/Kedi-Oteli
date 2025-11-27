@@ -41,4 +41,4 @@ jobs:
           SPREADSHEET_KEY: ${{ secrets.SPREADSHEET_KEY }}
           WORKSHEET_NAME: ${{ secrets.WORKSHEET_NAME }}
         run: |
-          python KediOteli.py
+          python Kedi_Oteli.py
