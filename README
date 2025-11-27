@@ -1,0 +1,29 @@
+⭐ Cat Hotel - Automatic Reservation System
+
+Google Forms → Google Sheets → Python → Supabase → GitHub Actions
+Fully automated data processing and cloud-based reservation management system 🐾
+
+This project is an end-to-end automated reservation system developed for a cat hotel. 
+It enables the automatic transfer of customer and cat information, filled in via Google Forms, to a Supabase PostgreSQL database without any manual intervention.
+
+The project is entirely cloud-based and is not dependent on any computer.
+
+Architecture
+Google Form → Google Sheets → GitHub Actions → Python ETL Script → Supabase (PostgreSQL)
+Automatically triggered every 15 minutes with GitHub Actions:
+Reads Google Sheets data
+Cleans and normalizes the data
+Processes it into the owners, cats, bookings, vaccinations, services tables
+Writes errors back into Sheets (import_error column)
+
+-Security-
+.env is stored in the local environment
+No secrets are found in the repository thanks to GitHub Secrets
+Even the Service account JSON file is securely stored in base64 encoded form
+
+✓ Error Management
+After each line is processed, import_status = Done
+If there is an error, the stack trace is entered into the import_error column
+This makes it easy to track errors via Google Sheets
+
+
