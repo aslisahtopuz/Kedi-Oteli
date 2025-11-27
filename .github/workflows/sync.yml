@@ -2,8 +2,8 @@ name: Sync Google Sheets to Supabase
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   
-  workflow_dispatch: {}       
+    - cron: "*/15 * * * *"   # every 15 minutes
+  workflow_dispatch: {}       # manual trigger
 
 jobs:
   sync:
@@ -40,5 +40,6 @@ jobs:
           SERVICE_JSON_PATH: kedioteli-1ad8252b41ac.json
           SPREADSHEET_KEY: ${{ secrets.SPREADSHEET_KEY }}
           WORKSHEET_NAME: ${{ secrets.WORKSHEET_NAME }}
+
         run: |
           python Kedi_Oteli.py
