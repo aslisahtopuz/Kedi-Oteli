@@ -1,29 +1,125 @@
-⭐ Cat Hotel - Automatic Reservation System
+⭐ Cat Hotel – Automated Reservation Management System
 
-Google Forms → Google Sheets → Python → Supabase → GitHub Actions
-Fully automated data processing and cloud-based reservation management system 🐾
+Google Forms → Google Sheets → Python ETL → Supabase → GitHub Actions
+Fully automated, cloud-based reservation workflow for a pet hotel 🐾
 
-This project is an end-to-end automated reservation system developed for a cat hotel. 
-It enables the automatic transfer of customer and cat information, filled in via Google Forms, to a Supabase PostgreSQL database without any manual intervention.
+🚀 Overview
 
-The project is entirely cloud-based and is not dependent on any computer.
+This project provides a complete automation pipeline that transfers customer and pet reservation data—submitted through Google Forms—into a structured Supabase PostgreSQL database.
 
-Architecture
-Google Form → Google Sheets → GitHub Actions → Python ETL Script → Supabase (PostgreSQL)
-Automatically triggered every 15 minutes with GitHub Actions:
-Reads Google Sheets data
-Cleans and normalizes the data
-Processes it into the owners, cats, bookings, vaccinations, services tables
-Writes errors back into Sheets (import_error column)
+Everything runs in the cloud.
+There is no need for a local server, manual syncing, or human intervention.
 
--Security-
-.env is stored in the local environment
-No secrets are found in the repository thanks to GitHub Secrets
-Even the Service account JSON file is securely stored in base64 encoded form
+🏗️ System Architecture
 
-✓ Error Management
-After each line is processed, import_status = Done
-If there is an error, the stack trace is entered into the import_error column
-This makes it easy to track errors via Google Sheets
+Google Form  
+    ↓  
+Google Sheets  
+    ↓ (every 15 min – GitHub Actions cron)  
+Python ETL Script  
+    ↓  
+Supabase PostgreSQL Database  
 
+🔄 Automation Cycle
 
+Every 15 minutes GitHub Actions:
+
+Opens the Google Sheet
+
+Reads new or updated records
+
+Normalizes and validates data
+
+Syncs information into the following DB tables:
+
+-owners
+
+-cats
+
+-bookings
+
+-vaccinations
+
+-services
+
+Writes sync results back into Google Sheets (kayit_durumu & hata_mesaj)
+
+🧠 Features
+🔹 1. Owner & Pet Management
+
+Owners are uniquely identified by (name, phone number)
+
+Multiple cats under the same owner are supported
+
+Cat records auto-update if edited in Google Sheets
+
+🔹 2. Booking Management
+
+Each booking receives a persistent booking_id
+
+Edits in the sheet update the existing database record
+
+Supports date parsing, numeric normalization, and data cleaning
+
+🔹 3. Vaccination Tracking
+
+New vaccine entries are appended to the vaccinations table
+
+Historical vaccination records remain visible in the database
+
+Google Sheets only shows the latest dates
+
+🔹 4. Service Tracking
+
+Pet taxi usage is tracked
+
+Ensures 1-to-1 relationship per booking
+
+🔐 Security
+
+.env remains local and is never pushed to GitHub
+
+Supabase credentials & Google Service Account JSON
+are stored securely inside GitHub Secrets
+
+JSON authentication file is generated dynamically during workflow
+
+No sensitive data exists inside the repository
+
+⚠️ Error Handling
+
+For each processed row:
+
+Column	Description
+kayit_durumu	Shows Done or Error
+hata_mesaj	If an error occurs, full traceback is written here
+booking_id	Returned for new reservations
+
+This makes debugging extremely transparent.
+
+📌 Technologies Used
+
+Python (ETL Script)
+
+gspread & Google Service Accounts
+
+psycopg2 (PostgreSQL)
+
+Supabase
+
+GitHub Actions (CI/CD automation)
+
+Google Forms + Google Sheets
+
+🎯 Purpose
+
+This system was developed for a real-world cat hotel operation.
+The goal:
+Minimize manual data entry, prevent human error, and automate the entire reservation flow.
+
+👍 Status
+
+All components fully functional and ready for production use.
+Supports multi-cat bookings, data edits, recurring vaccinations, and error-safe automation.
+
+ENJOY THE SYSTEM! 🚀
