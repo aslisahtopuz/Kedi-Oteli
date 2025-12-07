@@ -163,7 +163,7 @@ for i, r in enumerate(rows, start=2):
             ))
              
 
-            owner_id = cur.fetchone()[0]
+            owner_id = cur.fetchone()[0] 
            
 
             # CATS
@@ -265,6 +265,13 @@ for i, r in enumerate(rows, start=2):
             # VACCINATIONS 
             in_ex = d(G(r,"in_ex_date"))
             karma = d(G(r,"karma_date"))
+
+            #delete old records
+            cur.execute("""
+                DELETE FROM public.vaccinations
+                WHERE cat_id = %s;
+            """, (cat_id,))
+                
             if in_ex or karma:
                 cur.execute("""
                     INSERT INTO public.vaccinations(cat_id, in_ex_date, karma_date)
