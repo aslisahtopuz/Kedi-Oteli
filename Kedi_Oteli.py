@@ -239,7 +239,7 @@ for i, r in enumerate(rows, start=2):
                         INSERT INTO public.cats(
                             owner_id, cat_name, cat_age, cat_sex, cat_breed, chip, neuter
                         )
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s)
                         RETURNING cat_id;
                     """, (
                         owner_id, G(r, "cat_name"), G(r, "cat_age"),
