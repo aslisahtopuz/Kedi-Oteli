@@ -94,7 +94,7 @@ COL = {
 
     "in_ex_date":  "İç-Dış Parazit Aşısı Tarihi",
     "karma_date":  "Karma Aşı Tarihi",
-    "vacc_info":   "Aşı Bilgisi",
+    
 
     "price_daily":   "Günlük Fiyat",
     "price_monthly": "Aylık Fiyat",
@@ -277,11 +277,11 @@ for i, r in enumerate(rows, start=2):
             booking_id = cur.fetchone()[0]
 
             # VACCINATIONS
-            if G(r, "in_ex_date") or G(r, "karma_date") or G(r, "vacc_info"):
+            if G(r, "in_ex_date") or G(r, "karma_date"):
                 cur.execute("""
-                    INSERT INTO public.vaccinations(cat_id, in_ex_date, karma_date, vacc_info)
-                    VALUES (%s,%s,%s,%s)
-                """, (cat_id, d(G(r, "in_ex_date")), d(G(r, "karma_date")), G(r, "vacc_info")))
+                    INSERT INTO public.vaccinations(cat_id, in_ex_date, karma_date)
+                    VALUES (%s,%s,%s)
+                """, (cat_id, d(G(r, "in_ex_date")), d(G(r, "karma_date"))))
 
             # SERVICES
             taxi_val = G(r, "taxi")
