@@ -85,7 +85,6 @@ COL = {
     "cat_age":     "Evcil Hayvan Yaş Bilgisi",
     "cat_sex":     "Evcil Hayvan Cinsiyet",
     "cat_breed":   "Evcil Hayvan Cins",
-    "cat_allergy": "Alerji / Diyet",
     "chip":        "Evcil Hayvan Çip No.",
     "neuter":      "Kısır mı?",
     "taxi":        "Pet Taksi Hizmeti Alındı mı?",
@@ -224,13 +223,12 @@ for i, r in enumerate(rows, start=2):
                 cur.execute("""
                     UPDATE public.cats
                     SET cat_age=%s, cat_sex=%s, cat_breed=%s,
-                        cat_allergy=%s, chip=%s, neuter=%s
+                        chip=%s, neuter=%s
                     WHERE cat_id=%s
                 """, (
                     G(r, "cat_age"),
                     norm_sex(G(r, "cat_sex")),
                     G(r, "cat_breed"),
-                    G(r, "cat_allergy"),
                     str(G(r, "chip", "")),
                     G(r, "neuter"),
                     cat_id
@@ -239,26 +237,26 @@ for i, r in enumerate(rows, start=2):
                 if CATS_HAS_OWNER:
                     cur.execute("""
                         INSERT INTO public.cats(
-                            owner_id, cat_name, cat_age, cat_sex, cat_breed, cat_allergy, chip, neuter
+                            owner_id, cat_name, cat_age, cat_sex, cat_breed, chip, neuter
                         )
                         VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                         RETURNING cat_id;
                     """, (
                         owner_id, G(r, "cat_name"), G(r, "cat_age"),
                         norm_sex(G(r, "cat_sex")), G(r, "cat_breed"),
-                        G(r, "cat_allergy"), str(G(r, "chip", "")), G(r, "neuter")
+                        str(G(r, "chip", "")), G(r, "neuter")
                     ))
                 else:
                     cur.execute("""
                         INSERT INTO public.cats(
-                            cat_name, cat_age, cat_sex, cat_breed, cat_allergy, chip, neuter
+                            cat_name, cat_age, cat_sex, cat_breed, chip, neuter
                         )
                         VALUES (%s,%s,%s,%s,%s,%s,%s)
                         RETURNING cat_id;
                     """, (
                         G(r, "cat_name"), G(r, "cat_age"),
                         norm_sex(G(r, "cat_sex")), G(r, "cat_breed"),
-                        G(r, "cat_allergy"), str(G(r, "chip", "")), G(r, "neuter")
+                        str(G(r, "chip", "")), G(r, "neuter")
                     ))
                 cat_id = cur.fetchone()[0]
 
