@@ -188,6 +188,7 @@ ok = err = 0
 sheet_updates = []
 
 for i, r in enumerate(rows, start=2):
+    booking_id = None
     if r.get("import_status") == "Done":
         continue
 
