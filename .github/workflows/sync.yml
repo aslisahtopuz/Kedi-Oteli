@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "*/15 * * * *"   # every 15 minutes
   workflow_dispatch: {}       # manual trigger
+concurrency:
+  group: kedi-oteli-sync
+  cancel-in-progress: true
 
 jobs:
   sync:
