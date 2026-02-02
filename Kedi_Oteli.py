@@ -285,7 +285,7 @@ for i, r in enumerate(rows, start=2):
 
             # SERVICES
             taxi_val = G(r, "taxi")
-            if taxi_val not in (None, ""):
+            if taxi_val not in (None, "") and booking_id:
                 cur.execute("""
                     INSERT INTO public.services (taxi, booking_id)
                     VALUES (%s, %s)
