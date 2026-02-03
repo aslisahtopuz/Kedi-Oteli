@@ -138,12 +138,7 @@ def norm_sex(s):
 headers = ws.row_values(1)
 header_updates = []
 
-if "ziyaret_sayisi" not in headers:
-    header_updates.append({
-        "range": rowcol_to_a1(1, len(headers) + 1),
-        "values": [["ziyaret_sayisi"]],
-    })
-    headers.append("gelis_no")
+
 
 if "import_status" not in headers:
     header_updates.append({
@@ -162,7 +157,6 @@ if "import_error" not in headers:
 safe_batch_update(ws, header_updates)
 
 headers = ws.row_values(1)
-col_ziyaret_sayisi = headers.index("ziyaret_sayisi") + 1
 col_status = headers.index("import_status") + 1
 col_error  = headers.index("import_error") + 1
 
@@ -284,14 +278,7 @@ for i, r in enumerate(rows, start=2):
                 G(r, "notes"), G(r, "room_type")
             ))
             booking_id = cur.fetchone()[0]
-            cur.execute("""
-                SELECT COUNT(*)
-                FROM public.bookings b
-                JOIN public.cats c ON c.cat_id = b.cat_id
-                JOIN public.owners o ON o.owner_id = c.owner_id
-                WHERE o.owner_id = %s AND c.cat_id = %s
-            """, (owner_id, cat_id))
-            ziyaret_sayisi = cur.fetchone()[0]
+         
 
 
             # VACCINATIONS
@@ -310,10 +297,6 @@ for i, r in enumerate(rows, start=2):
                 """, (taxi_val, booking_id))
 
         conn.commit()
-        sheet_updates.append({
-            "range": rowcol_to_a1(i, col_gelis_no),
-            "values": [[str(gelis_no)]],
-        })
 
         sheet_updates.append({
             "range": rowcol_to_a1(i, col_status),
